@@ -134,6 +134,11 @@ export async function POST(req: Request) {
     const extractions = data.extractions || {};
     const extractedInterest = extractions.interest_level || extractions.is_interested || extractions.interest;
     
+    if (!callRecord || !callRecord.lead_id) {
+      console.log('Skipping lead update: No call record or lead_id found.');
+      return NextResponse.json({ success: true });
+    }
+
     if (extractedInterest || currentStatus === 'completed') {
       let newStatus = 'Contacted';
       let newInterestLevel = 'Pending Review';
