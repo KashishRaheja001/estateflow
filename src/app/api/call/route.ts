@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     }
 
     const bolnaData = await bolnaResponse.json();
+    const executionId = bolnaData.execution_id || bolnaData.data?.execution_id;
 
     // Update lead status in Supabase
     const { error: updateError } = await supabaseAdmin
@@ -40,7 +41,18 @@ export async function POST(req: Request) {
       console.error('Supabase Update Error:', updateError);
     }
 
-    return NextResponse.json({ success: true, executionId: bolnaData.execution_id });
+    // Pre-create the call log so webhook can just update it
+    if (executionId) {
+      await supabaseAdmin.from('calls').insert({
+        lead_id: leadId,
+        bolna_execution_id: executionId,
+        call_status: 'Calling...',
+        summary: 'Call initiated...',
+        transcript: ''
+      });
+    }
+
+    return NextResponse.json({ success: true, executionId });
   } catch (error) {
     console.error('API Call Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

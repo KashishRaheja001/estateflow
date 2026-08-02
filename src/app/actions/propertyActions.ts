@@ -57,3 +57,32 @@ export async function deleteProperty(id: string) {
   revalidatePath("/");
   return { success: true };
 }
+
+export async function updateProperty(id: string, formData: FormData) {
+  const project_name = formData.get("project_name") as string;
+  const builder = formData.get("builder") as string;
+  const location = formData.get("location") as string;
+  const description = formData.get("description") as string;
+  const price_range = formData.get("price_range") as string;
+  const configurations = formData.get("configurations") as string;
+
+  if (!project_name || !location) {
+    return { error: "Project name and location are required" };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("properties")
+    .update({
+      project_name,
+      builder,
+      location,
+      description,
+      price_range,
+      configurations
+    })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+  revalidatePath("/properties");
+  return { success: true };
+}

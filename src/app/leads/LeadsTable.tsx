@@ -40,15 +40,39 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<"new" | "contacted">("new");
+
+  const filteredLeads = leads.filter(lead => {
+    if (activeTab === "new") return lead.status === "New";
+    return lead.status !== "New"; // Everything else goes to Contacted
+  });
+
   return (
     <div className="bg-surface border border-border/50 rounded-2xl p-8 shadow-sm relative">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-2xl font-serif text-on-surface tracking-tight">Active Leads</h2>
         <button 
           onClick={() => setShowAddModal(true)}
           className="bg-neutral text-on-surface border border-border/50 px-6 py-2 rounded-full text-sm font-semibold hover:bg-tertiary transition-colors shadow-sm"
         >
           + Add Lead
+        </button>
+      </div>
+
+      <div className="flex border-b border-border/50 mb-6 gap-8">
+        <button 
+          onClick={() => setActiveTab("new")}
+          className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "new" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
+        >
+          New Leads
+          {activeTab === "new" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
+        </button>
+        <button 
+          onClick={() => setActiveTab("contacted")}
+          className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "contacted" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
+        >
+          Contacted Leads
+          {activeTab === "contacted" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
         </button>
       </div>
 
@@ -62,6 +86,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
               else {
                 setLeads([res.lead, ...leads]);
                 setShowAddModal(false);
+                setActiveTab("new");
               }
             }} className="space-y-4">
               <div>
@@ -87,7 +112,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
       )}
 
       
-      {leads.length > 0 ? (
+      {filteredLeads.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -100,7 +125,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {leads.map((lead: any) => (
+              {filteredLeads.map((lead: any) => (
                 <tr key={lead.id} className="border-b border-border/20 last:border-0 hover:bg-tertiary/50 transition-colors">
                   <td className="py-5">
                     <div className="font-semibold text-on-surface text-base">{lead.name}</div>
@@ -110,7 +135,9 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                   <td className="py-5">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
                       lead.status === "Calling..." ? "bg-amber-100 text-amber-800 border-amber-200" :
-                      lead.status === "Contacted" ? "bg-green-100 text-green-800 border-green-200" :
+                      lead.status === "New" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                      lead.status === "Interested" ? "bg-green-100 text-green-800 border-green-200" :
+                      lead.status === "Not Interested" ? "bg-red-100 text-red-800 border-red-200" :
                       "bg-tertiary text-on-surface border-border/50"
                     }`}>
                       {lead.status}
@@ -124,22 +151,23 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                   <td className="py-5 text-on-surface-muted">
                     {format(new Date(lead.created_at), "MMM d, yyyy")}
                   </td>
-                  <td className="py-5 text-right space-x-3">
-                    <button 
-                      onClick={() => handleCall(lead.id, lead.phone)}
-                      disabled={callingId === lead.id || lead.status === "Calling..."}
-                      className="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold tracking-wide shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {callingId === lead.id || lead.status === "Calling..." ? "Calling..." : "Call AI"}
-                    </button>
-                    {lead.calls && lead.calls.length > 0 && (
-                      <button className="text-on-surface hover:text-primary transition-colors text-sm font-medium underline underline-offset-2">
-                        View Log
+                  <td className="py-5 text-right space-x-3 whitespace-nowrap">
+                    {lead.status === "New" || lead.status === "Calling..." ? (
+                      <button 
+                        onClick={() => handleCall(lead.id, lead.phone)}
+                        disabled={callingId === lead.id || lead.status === "Calling..."}
+                        className="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold tracking-wide shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {callingId === lead.id || lead.status === "Calling..." ? "Calling..." : "Call AI"}
                       </button>
+                    ) : (
+                      <a href={`/leads/${lead.id}`} className="inline-block bg-primary text-white px-5 py-2 rounded-full text-sm font-bold tracking-wide shadow-sm hover:opacity-90 transition-opacity">
+                        View Results
+                      </a>
                     )}
                     <button 
                       onClick={() => handleDelete(lead.id)}
-                      className="text-on-surface hover:text-red-500 transition-colors text-sm font-medium underline underline-offset-2"
+                      className="text-on-surface hover:text-red-500 transition-colors text-sm font-medium underline underline-offset-2 ml-3"
                     >
                       Delete
                     </button>
@@ -151,8 +179,8 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
         </div>
       ) : (
         <div className="text-center py-16 text-on-surface-muted bg-neutral/50 rounded-xl border border-border/30">
-          <p className="text-lg font-serif mb-2">No leads in the system yet.</p>
-          <p className="text-sm">Click "Add Lead" to start building your CRM.</p>
+          <p className="text-lg font-serif mb-2">No leads found in this section.</p>
+          <p className="text-sm">Click "Add Lead" to start building your CRM, or check the other tab.</p>
         </div>
       )}
     </div>
