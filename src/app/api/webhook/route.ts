@@ -47,10 +47,34 @@ export async function POST(req: Request) {
       console.error('Error inserting call log:', insertError);
     }
 
+    // Dynamically extract interest level if Bolna provides it in the extractions
+    // Assuming the user creates an extraction named "interest_level" or "is_interested" in Bolna
+    const extractions = payload?.extractions || payload?.data?.extractions || {};
+    
+    // We will look for common names you might give the extraction in Bolna
+    const extractedInterest = extractions.interest_level || extractions.is_interested || extractions.interest || 'Pending';
+    
+    // Determine status based on interest
+    let newStatus = 'Contacted';
+    let newInterestLevel = 'Requires Review';
+    
+    if (typeof extractedInterest === 'string') {
+      const interestLower = extractedInterest.toLowerCase();
+      if (interestLower.includes('not') || interestLower.includes('uninterested')) {
+        newStatus = 'Not Interested';
+        newInterestLevel = 'Low';
+      } else if (interestLower.includes('yes') || interestLower.includes('interested') || interestLower.includes('high')) {
+        newStatus = 'Interested';
+        newInterestLevel = 'High';
+      } else {
+        newInterestLevel = extractedInterest; // Use whatever exact word the AI extracted
+      }
+    }
+
     // Update lead status
     await supabaseAdmin
       .from('leads')
-      .update({ status: 'Contacted', interest_level: 'Requires Review' })
+      .update({ status: newStatus, interest_level: newInterestLevel })
       .eq('id', leadId);
 
     return NextResponse.json({ success: true });
