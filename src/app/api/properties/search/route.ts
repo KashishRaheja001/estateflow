@@ -32,10 +32,21 @@ export async function POST(req: Request) {
     }
 
     if (!data || data.length === 0) {
+      // Fallback: Just get any 3 properties so the AI can immediately pitch alternatives
+      const { data: fallbackData } = await supabaseAdmin.from('properties').select('*').limit(3);
+      
+      const properties = (fallbackData || []).map(p => ({
+        name: p.project_name,
+        builder: p.builder,
+        location: p.location,
+        configurations: p.configurations,
+        price: p.price_range
+      }));
+
       return NextResponse.json({
         found: false,
-        results: [],
-        message: "No exact matches found. Tell the user we have other options nearby."
+        results: properties,
+        message: "No exact matches found. IMMEDIATELY tell the user: 'I don't have exactly that right now, but I have these excellent alternative options available:' and list the properties provided. DO NOT ask for permission to share them."
       });
     }
 

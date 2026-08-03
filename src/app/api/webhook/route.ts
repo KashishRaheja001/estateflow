@@ -48,65 +48,73 @@ export async function POST(req: Request) {
 
     // 2. If no call record exists, this call might have been initiated directly from the Bolna Dashboard
     if (!callRecord) {
+      let leadId;
       const phone = findPhoneNumber(payload);
+      
       if (!phone) {
         console.log('No phone number found to match lead for execution:', executionId);
-        return NextResponse.json({ success: true, warning: 'No phone number to match lead' });
-      }
-
-      // Try to find the lead by phone
-      const { data: leads } = await supabaseAdmin
-        .from('leads')
-        .select('id')
-        .ilike('phone', `%${phone.replace('+', '')}%`)
-        .limit(1);
-
-      if (!leads || leads.length === 0) {
-        console.log('No matching lead found for phone:', phone);
-        return NextResponse.json({ success: true, warning: 'Lead not found for phone' });
-      }
-
-      // Create the new call log
-      const insertData: any = {
-        lead_id: leads[0].id,
-        bolna_execution_id: executionId,
-        call_status: currentStatus,
-        summary: summary || 'Call initiated...',
-        transcript: transcript || '',
-      };
-      
-      // If we added a recording_url column to DB, we can try to save it
-      if (recordingUrl) {
-         insertData.recording_url = recordingUrl;
-      }
-
-      const { data: newCall, error: insertError } = await supabaseAdmin
-        .from('calls')
-        .insert(insertData)
-        .select()
-        .single();
-        
-      if (insertError) {
-        // If recording_url column doesn't exist, it might fail. Let's fallback and retry without recording_url.
-        if (insertError.message.includes('recording_url')) {
-           delete insertData.recording_url;
-           const { data: retryCall, error: retryError } = await supabaseAdmin
-             .from('calls')
-             .insert(insertData)
-             .select()
-             .single();
-           if (retryError) {
-             console.error('Error inserting call log (retry):', retryError);
-             return NextResponse.json({ error: 'DB Insert Error' }, { status: 500 });
-           }
-           callRecord = retryCall;
-           console.log('Please add a "recording_url" TEXT column to your "calls" table in Supabase!');
-        } else {
-           console.error('Error inserting call log:', insertError);
-           return NextResponse.json({ error: 'DB Insert Error' }, { status: 500 });
-        }
+        // Create an Unknown Lead for Dashboard Tests
+        const { data: newLead } = await supabaseAdmin
+          .from('leads')
+          .insert({ name: 'Unknown Dashboard Test', phone: 'No Phone Provided', status: 'New' })
+          .select()
+          .single();
+        if (newLead) leadId = newLead.id;
       } else {
-        callRecord = newCall;
+        // Try to find the lead by phone
+        const { data: leads } = await supabaseAdmin
+          .from('leads')
+          .select('id')
+          .ilike('phone', `%${phone.replace('+', '')}%`)
+          .limit(1);
+
+        if (!leads || leads.length === 0) {
+          console.log('No matching lead found for phone:', phone);
+          const { data: newLead } = await supabaseAdmin
+            .from('leads')
+            .insert({ name: 'New Unknown Caller', phone: phone, status: 'New' })
+            .select()
+            .single();
+          if (newLead) leadId = newLead.id;
+        } else {
+          leadId = leads[0].id;
+        }
+      }
+
+      if (leadId) {
+        const insertData: any = {
+          lead_id: leadId,
+          bolna_execution_id: executionId || 'unknown',
+          call_status: currentStatus,
+          summary: summary || 'Call initiated...',
+          transcript: transcript || '',
+        };
+        
+        if (recordingUrl) {
+           insertData.recording_url = recordingUrl;
+        }
+
+        const { data: newCall, error: insertError } = await supabaseAdmin
+          .from('calls')
+          .insert(insertData)
+          .select()
+          .single();
+          
+        if (insertError) {
+          if (insertError.message.includes('recording_url')) {
+             delete insertData.recording_url;
+             const { data: retryCall } = await supabaseAdmin
+               .from('calls')
+               .insert(insertData)
+               .select()
+               .single();
+             callRecord = retryCall;
+          } else {
+             console.error('Error inserting call log:', insertError);
+          }
+        } else {
+          callRecord = newCall;
+        }
       }
     } else {
       // 3. Update existing call log
