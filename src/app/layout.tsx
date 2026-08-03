@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -47,6 +47,7 @@ export default function RootLayout({
         <main className="flex-1 max-w-7xl w-full mx-auto p-6">
           {children}
         </main>
+        <SpeedInsights />
       </body>
     </html>
   );
