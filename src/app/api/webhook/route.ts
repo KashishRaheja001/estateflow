@@ -38,10 +38,31 @@ export async function POST(req: Request) {
     if (!executionId) {
       return NextResponse.json({ success: true, warning: 'No execution_id found' });
     }
+    
+    // 2. Parse Transcript & Summary
+    let transcript = data.transcript || null;
+    
+    // Fallback if Bolna hasn't enabled post-processing yet: extract User's speech from latency data
+    if (!transcript && data.latency_data?.transcriber?.turns) {
+      transcript = data.latency_data.transcriber.turns
+        .map((t: any) => {
+           // The last object in turn_latency usually contains the most complete recognized text for that turn
+           const texts = t.turn_latency?.map((l: any) => l.text).filter(Boolean);
+           if (texts && texts.length > 0) {
+             return `User: ${texts[texts.length - 1]}`;
+           }
+           return '';
+        })
+        .filter((text: string) => text.trim().length > 0)
+        .join('\n\n');
+        
+      if (transcript) {
+        transcript = "*** Note: This is a partial transcript (User only) because Bolna's full transcription is disabled in the agent settings. ***\n\n" + transcript;
+      }
+    }
 
     const currentStatus = data.status || 'Unknown';
     const summary = data.summary;
-    const transcript = data.transcript;
     const recordingUrl = data.recording_url || data.telephony_data?.recording_url;
     const extractions = data.extractions || data.extracted_data || {};
 
