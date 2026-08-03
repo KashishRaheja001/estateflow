@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     // Bolna API sometimes wraps the data in a `data` property
     const data = payload?.data || payload;
 
-    const executionId = data.execution_id;
+    const executionId = data.execution_id || data.id;
     if (!executionId) {
       return NextResponse.json({ success: true, warning: 'No execution_id found' });
     }
@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     const currentStatus = data.status || 'Unknown';
     const summary = data.summary;
     const transcript = data.transcript;
-    const recordingUrl = data.recording_url;
+    const recordingUrl = data.recording_url || data.telephony_data?.recording_url;
+    const extractions = data.extractions || data.extracted_data || {};
 
     // 1. Check if we already have this call logged
     const { data: existingCalls } = await supabaseAdmin
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
         call_status: currentStatus,
       };
 
-      const extractions = data.extractions || {};
+      // const extractions = data.extractions || {}; // Already declared above
       let finalSummary = summary;
       if (currentStatus === 'completed' && Object.keys(extractions).length > 0) {
         finalSummary = (summary || 'Call completed.') + '\n\nEXTRACTED REQUIREMENTS:\n';
@@ -150,7 +151,7 @@ export async function POST(req: Request) {
     }
 
     // 4. Update the Lead status based on extractions if call is completed or we have explicit interest
-    const extractions = data.extractions || {};
+    // const extractions = data.extractions || {}; // Already declared above
     const extractedInterest = extractions.interest_level || extractions.is_interested || extractions.interest;
     
     if (!callRecord || !callRecord.lead_id) {
