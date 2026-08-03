@@ -34,18 +34,22 @@ export async function POST(req: Request) {
     if (!data || data.length === 0) {
       return NextResponse.json({
         found: false,
-        message: "I couldn't find any properties exactly matching those requirements in our current inventory. However, we have other great options in nearby sectors. Should I tell you about those?"
+        results: [],
+        message: "No exact matches found. Tell the user we have other options nearby."
       });
     }
 
-    // Format the response so the AI can easily read it over the phone
-    const propertyDescriptions = data.map((p, index) => {
-      return `Property ${index + 1}: ${p.project_name} by ${p.builder} located at ${p.location}. It offers ${p.configurations} with prices ranging from ${p.price_range}.`;
-    }).join(' ');
+    const properties = data.map(p => ({
+      name: p.project_name,
+      builder: p.builder,
+      location: p.location,
+      configurations: p.configurations,
+      price: p.price_range
+    }));
 
     return NextResponse.json({
       found: true,
-      message: `I found some excellent matches for you. ${propertyDescriptions} Would you like me to schedule a site visit for any of these?`
+      results: properties
     });
 
   } catch (error) {

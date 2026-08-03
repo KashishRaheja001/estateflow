@@ -113,8 +113,19 @@ export async function POST(req: Request) {
       const updateData: any = {
         call_status: currentStatus,
       };
+
+      const extractions = data.extractions || {};
+      let finalSummary = summary;
+      if (currentStatus === 'completed' && Object.keys(extractions).length > 0) {
+        finalSummary = (summary || 'Call completed.') + '\n\nEXTRACTED REQUIREMENTS:\n';
+        if (extractions.location || extractions.preferred_location) finalSummary += `- Location: ${extractions.location || extractions.preferred_location}\n`;
+        if (extractions.configuration || extractions.property_type) finalSummary += `- Property Type: ${extractions.configuration || extractions.property_type}\n`;
+        if (extractions.budget || extractions.budget_range) finalSummary += `- Budget: ${extractions.budget || extractions.budget_range}\n`;
+        if (extractions.timeline || extractions.purchase_timeline) finalSummary += `- Timeline: ${extractions.timeline || extractions.purchase_timeline}\n`;
+      }
+
       // Only overwrite if we actually received non-null data
-      if (summary) updateData.summary = summary;
+      if (finalSummary) updateData.summary = finalSummary;
       if (transcript) updateData.transcript = transcript;
       if (recordingUrl) updateData.recording_url = recordingUrl;
 
@@ -159,9 +170,13 @@ export async function POST(req: Request) {
         }
       }
 
+      const leadUpdate: any = { status: newStatus, interest_level: newInterestLevel };
+      if (extractions.budget || extractions.budget_range) leadUpdate.budget = extractions.budget || extractions.budget_range;
+      if (extractions.configuration || extractions.property_type) leadUpdate.property_type = extractions.configuration || extractions.property_type;
+
       await supabaseAdmin
         .from('leads')
-        .update({ status: newStatus, interest_level: newInterestLevel })
+        .update(leadUpdate)
         .eq('id', callRecord.lead_id);
     }
 

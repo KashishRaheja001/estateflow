@@ -34,6 +34,7 @@ export default function RootLayout({
             <nav className="flex items-center gap-8 font-medium text-sm">
               <a href="/" className="text-on-surface hover:text-primary transition-colors">Dashboard</a>
               <a href="/leads" className="text-on-surface hover:text-primary transition-colors">Leads</a>
+              <a href="/leads/interested" className="text-red-700 font-bold hover:text-primary transition-colors">Hot Leads</a>
               <a href="/properties" className="text-on-surface hover:text-primary transition-colors">Properties</a>
               <a href="/settings" className="text-on-surface hover:text-primary transition-colors">Settings</a>
             </nav>

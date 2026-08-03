@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { addLead, deleteLead } from "@/app/actions/leadActions";
-export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
+export default function LeadsTable({ initialLeads, hideTabs = false }: { initialLeads: any[], hideTabs?: boolean }) {
   const [leads, setLeads] = useState(initialLeads || []);
   const [callingId, setCallingId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"new" | "contacted">(hideTabs ? "contacted" : "new");
 
   const handleCall = async (leadId: string, phone: string) => {
     setCallingId(leadId);
@@ -40,8 +41,6 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<"new" | "contacted">("new");
-
   const filteredLeads = leads.filter(lead => {
     if (activeTab === "new") return lead.status === "New";
     return lead.status !== "New"; // Everything else goes to Contacted
@@ -59,22 +58,24 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
         </button>
       </div>
 
-      <div className="flex border-b border-border/50 mb-6 gap-8">
-        <button 
-          onClick={() => setActiveTab("new")}
-          className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "new" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
-        >
-          New Leads
-          {activeTab === "new" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
-        </button>
-        <button 
-          onClick={() => setActiveTab("contacted")}
-          className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "contacted" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
-        >
-          Contacted Leads
-          {activeTab === "contacted" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
-        </button>
-      </div>
+      {!hideTabs && (
+        <div className="flex border-b border-border/50 mb-6 gap-8">
+          <button 
+            onClick={() => setActiveTab("new")}
+            className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "new" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
+          >
+            New Leads
+            {activeTab === "new" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
+          </button>
+          <button 
+            onClick={() => setActiveTab("contacted")}
+            className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === "contacted" ? "text-primary" : "text-on-surface-muted hover:text-on-surface"}`}
+          >
+            Contacted Leads
+            {activeTab === "contacted" && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
+          </button>
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
