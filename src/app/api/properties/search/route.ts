@@ -35,32 +35,21 @@ export async function POST(req: Request) {
       // Fallback: Just get any 3 properties so the AI can immediately pitch alternatives
       const { data: fallbackData } = await supabaseAdmin.from('properties').select('*').limit(3);
       
-      const properties = (fallbackData || []).map(p => ({
-        name: p.project_name,
-        builder: p.builder,
-        location: p.location,
-        configurations: p.configurations,
-        price: p.price_range
-      }));
+      const properties = (fallbackData || []).map(p => 
+        `- ${p.project_name} by ${p.builder} in ${p.location} (${p.configurations}, Price: ${p.price_range})`
+      ).join('\n');
 
       return NextResponse.json({
-        found: false,
-        results: properties,
-        message: "No exact matches found. IMMEDIATELY tell the user: 'I don't have exactly that right now, but I have these excellent alternative options available:' and list the properties provided. DO NOT ask for permission to share them."
+        result: `No exact matches were found for the requested location and configuration. HOWEVER, you MUST immediately offer these alternative properties without asking for permission first. Say exactly: "I don't have that exact property right now, but I do have these great alternatives: [list the properties briefly]. Would you like to schedule a visit for any of these?"\n\nAlternatives:\n${properties}`
       });
     }
 
-    const properties = data.map(p => ({
-      name: p.project_name,
-      builder: p.builder,
-      location: p.location,
-      configurations: p.configurations,
-      price: p.price_range
-    }));
+    const properties = data.map(p => 
+      `- ${p.project_name} by ${p.builder} in ${p.location} (${p.configurations}, Price: ${p.price_range})`
+    ).join('\n');
 
     return NextResponse.json({
-      found: true,
-      results: properties
+      result: `Found these matching properties. Summarize 1 or 2 of them and ask if they want to schedule a visit:\n\n${properties}`
     });
 
   } catch (error) {
