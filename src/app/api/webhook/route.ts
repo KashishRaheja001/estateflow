@@ -102,13 +102,24 @@ export async function POST(req: Request) {
       
       if (!phone) {
         console.log('No phone number found to match lead for execution:', executionId);
-        // Create an Unknown Lead for Dashboard Tests
-        const { data: newLead } = await supabaseAdmin
+        
+        const { data: existingUnknown } = await supabaseAdmin
           .from('leads')
-          .insert({ name: 'Unknown Dashboard Test', phone: 'No Phone Provided', status: 'New' })
-          .select()
-          .single();
-        if (newLead) leadId = newLead.id;
+          .select('id')
+          .eq('phone', 'No Phone Provided')
+          .limit(1);
+          
+        if (existingUnknown && existingUnknown.length > 0) {
+          leadId = existingUnknown[0].id;
+        } else {
+          // Create an Unknown Lead for Dashboard Tests
+          const { data: newLead } = await supabaseAdmin
+            .from('leads')
+            .insert({ name: 'Unknown Dashboard Test', phone: 'No Phone Provided', status: 'New' })
+            .select()
+            .single();
+          if (newLead) leadId = newLead.id;
+        }
       } else {
         // Try to find the lead by phone
         const { data: leads } = await supabaseAdmin

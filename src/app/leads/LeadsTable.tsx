@@ -16,7 +16,7 @@ export default function LeadsTable({ initialLeads, hideTabs = false }: { initial
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Uses NEXT_PUBLIC_BOLNA_AGENT_ID from .env.local
-        body: JSON.stringify({ leadId, phone, agentId: process.env.NEXT_PUBLIC_BOLNA_AGENT_ID || localStorage.getItem("bolna_agent_id") || "YOUR_AGENT_ID" }),
+        body: JSON.stringify({ leadId, phone, agentId: process.env.NEXT_PUBLIC_BOLNA_AGENT_ID }),
       });
       const data = await response.json();
       if (data.success) {
@@ -159,7 +159,15 @@ export default function LeadsTable({ initialLeads, hideTabs = false }: { initial
                         disabled={callingId === lead.id || lead.status === "Calling..."}
                         className="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold tracking-wide shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {callingId === lead.id || lead.status === "Calling..." ? "Calling..." : "Call AI"}
+                        {callingId === lead.id || lead.status === "Calling..." ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Calling...
+                          </span>
+                        ) : "Call AI"}
                       </button>
                     ) : (
                       <a href={`/leads/${lead.id}`} className="inline-block bg-primary text-white px-5 py-2 rounded-full text-sm font-bold tracking-wide shadow-sm hover:opacity-90 transition-opacity">
