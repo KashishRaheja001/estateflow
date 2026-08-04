@@ -89,10 +89,10 @@ export default function PropertiesTable({ initialProperties }: { initialProperti
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border/50 text-sm font-semibold text-on-surface-muted uppercase tracking-wider">
+                <th className="pb-4 font-sans font-bold">Project</th>
                 <th className="pb-4 font-sans font-bold">Address</th>
                 <th className="pb-4 font-sans font-bold">Price</th>
-                <th className="pb-4 font-sans font-bold">Specs</th>
-                <th className="pb-4 font-sans font-bold">Status</th>
+                <th className="pb-4 font-sans font-bold">Added On</th>
                 <th className="pb-4 font-sans font-bold text-right">Actions</th>
               </tr>
             </thead>
@@ -118,7 +118,10 @@ export default function PropertiesTable({ initialProperties }: { initialProperti
                     {format(new Date(prop.created_at), "MMM d, yyyy")}
                   </td>
                   <td className="py-5 text-right space-x-3">
-                    <button className="text-on-surface hover:text-primary transition-colors text-sm font-medium underline underline-offset-2">
+                    <button 
+                      onClick={() => setEditProperty(prop)}
+                      className="text-on-surface hover:text-primary transition-colors text-sm font-medium underline underline-offset-2"
+                    >
                       Edit
                     </button>
                     <button 
