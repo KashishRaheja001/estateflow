@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const { count: interestedLeads } = await supabaseAdmin
     .from("leads")
     .select("*", { count: "exact", head: true })
-    .eq("interest_level", "Interested");
+    .or('interest_level.eq.High,status.eq.Interested');
 
   const { count: lostLeads } = await supabaseAdmin
     .from("leads")

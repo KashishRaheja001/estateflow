@@ -43,31 +43,47 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, warning: 'No execution_id found' });
     }
     
-    // 2. Parse Transcript & Summary
-    let transcript = data.transcript || null;
+    const currentStatus = data.status || 'Unknown';
     
-    // Fallback if Bolna hasn't enabled post-processing yet: extract User's speech from latency data
+    // 2. Parse Transcript & Summary
+    // On 'completed' status, fetch from Bolna API — the webhook payload has null transcript.
+    // The full transcript only lives on GET /executions/{id}.
+    let transcript = data.transcript || null;
+    let summary = data.summary || null;
+    let recordingUrl = data.recording_url || data.telephony_data?.recording_url || null;
+
+    if (currentStatus === 'completed' && process.env.BOLNA_API_KEY) {
+      try {
+        const bolnaRes = await fetch(`https://api.bolna.ai/executions/${executionId}`, {
+          headers: { 'Authorization': `Bearer ${process.env.BOLNA_API_KEY}` },
+        });
+        if (bolnaRes.ok) {
+          const bolnaExec = await bolnaRes.json();
+          transcript = bolnaExec.transcript || transcript;
+          summary = bolnaExec.summary || summary;
+          recordingUrl = recordingUrl || bolnaExec.telephony_data?.recording_url;
+          console.log('Fetched full execution from Bolna API for:', executionId);
+        }
+      } catch (err) {
+        console.error('Failed to fetch full execution from Bolna API:', err);
+      }
+    }
+    
+    // Fallback if Bolna hasn't enabled post-processing: extract User speech from latency_data
     if (!transcript && data.latency_data?.transcriber?.turns) {
       transcript = data.latency_data.transcriber.turns
         .map((t: any) => {
-           // The last object in turn_latency usually contains the most complete recognized text for that turn
            const texts = t.turn_latency?.map((l: any) => l.text).filter(Boolean);
-           if (texts && texts.length > 0) {
-             return `User: ${texts[texts.length - 1]}`;
-           }
+           if (texts && texts.length > 0) return `User: ${texts[texts.length - 1]}`;
            return '';
         })
         .filter((text: string) => text.trim().length > 0)
         .join('\n\n');
         
       if (transcript) {
-        transcript = "*** Note: This is a partial transcript (User only) because Bolna's full transcription is disabled in the agent settings. ***\n\n" + transcript;
+        transcript = "*** Partial transcript (user turns only — enable post-processing in Bolna agent Analytics tab) ***\n\n" + transcript;
       }
     }
-
-    const currentStatus = data.status || 'Unknown';
-    const summary = data.summary;
-    const recordingUrl = data.recording_url || data.telephony_data?.recording_url;
     const extractions = data.extractions || data.extracted_data || {};
 
     // 1. Check if we already have this call logged
