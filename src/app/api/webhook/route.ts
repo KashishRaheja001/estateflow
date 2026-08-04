@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import fs from 'fs';
-import path from 'path';
+// Removed local fs logging for Vercel compatibility
 
 // Helper to deeply extract a phone number from the payload
 function findPhoneNumber(payload: any): string | null {
@@ -25,10 +24,9 @@ export async function POST(req: Request) {
   try {
     const payload = await req.json();
     
-    // Log the entire raw payload to a file for debugging
-    const logPath = path.join(process.cwd(), 'webhook_logs.jsonl');
-    fs.appendFileSync(logPath, JSON.stringify(payload) + '\n');
-    
+    // We cannot use fs.appendFileSync on Vercel as it is a read-only filesystem
+    console.log('Webhook Payload Stringified:', JSON.stringify(payload));
+
     console.log('Webhook Received [Execution ID]:', payload?.execution_id || payload?.data?.id || payload?.data?.execution_id);
     
     // Bolna API sometimes wraps the data in a `data` property
