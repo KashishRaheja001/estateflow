@@ -48,6 +48,18 @@ export async function addLead(formData: FormData) {
 }
 
 export async function deleteLead(id: string) {
+  // First, delete any calls associated with this lead to prevent foreign key constraint violations
+  const { error: callsError } = await supabaseAdmin
+    .from("calls")
+    .delete()
+    .eq("lead_id", id);
+    
+  if (callsError) {
+    console.error("Error deleting calls:", callsError);
+    return { error: callsError.message };
+  }
+
+  // Then delete the lead itself
   const { error } = await supabaseAdmin
     .from("leads")
     .delete()
