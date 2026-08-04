@@ -121,11 +121,12 @@ export async function POST(req: Request) {
           if (newLead) leadId = newLead.id;
         }
       } else {
-        // Try to find the lead by phone
+        // Try to find the lead by phone — always pick the OLDEST (canonical) lead
         const { data: leads } = await supabaseAdmin
           .from('leads')
           .select('id')
           .ilike('phone', `%${phone.replace('+', '')}%`)
+          .order('created_at', { ascending: true })
           .limit(1);
 
         if (!leads || leads.length === 0) {
