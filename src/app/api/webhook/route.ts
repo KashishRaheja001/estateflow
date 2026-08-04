@@ -7,9 +7,15 @@ function findPhoneNumber(payload: any): string | null {
   if (!payload) return null;
   if (payload.customer_phone) return payload.customer_phone;
   if (payload.recipient_phone_number) return payload.recipient_phone_number;
+  if (payload.user_number) return payload.user_number;
+  if (payload.telephony_data?.to_number) return payload.telephony_data.to_number;
+  if (payload.context_details?.recipient_phone_number) return payload.context_details.recipient_phone_number;
   if (payload.metadata?.phone_number) return payload.metadata.phone_number;
   if (payload.data?.customer_phone) return payload.data.customer_phone;
   if (payload.data?.recipient_phone_number) return payload.data.recipient_phone_number;
+  if (payload.data?.user_number) return payload.data.user_number;
+  if (payload.data?.telephony_data?.to_number) return payload.data.telephony_data.to_number;
+  if (payload.data?.context_details?.recipient_phone_number) return payload.data.context_details.recipient_phone_number;
   if (payload.data?.metadata?.phone_number) return payload.data.metadata.phone_number;
   
   // Last resort regex search
